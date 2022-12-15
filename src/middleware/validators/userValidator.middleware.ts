@@ -1,6 +1,5 @@
-const { body } = require('express-validator');
-const Role = require('../../utils/userRoles.utils');
-
+import { body } from 'express-validator';
+import Role from '../../utils/userRoles.utils';
 
 exports.createUserSchema = [
     body('username')

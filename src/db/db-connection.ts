@@ -1,8 +1,10 @@
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
 dotenv.config();
-const mysql2 = require('mysql2');
+import mysql2 from 'mysql2';
 
 class DBConnection {
+    public db: any;
+
     constructor() {
         this.db = mysql2.createPool({
             host: process.env.DB_HOST,
@@ -15,7 +17,7 @@ class DBConnection {
     }
 
     checkConnection() {
-        this.db.getConnection((err, connection) => {
+        this.db.getConnection((err: any, connection: any) => {
             if (err) {
                 if (err.code === 'PROTOCOL_CONNECTION_LOST') {
                     console.error('Database connection was closed.');
@@ -34,9 +36,9 @@ class DBConnection {
         });
     }
 
-    query = async (sql, values) => {
+    query = async (sql: any, values?: any) => {
         return new Promise((resolve, reject) => {
-            const callback = (error, result) => {
+            const callback = (error: any, result: any) => {
                 if (error) {
                     reject(error);
                     return;
@@ -56,10 +58,9 @@ class DBConnection {
 }
 
 // like ENUM
-const HttpStatusCodes = Object.freeze({
+const HttpStatusCodes: any = Object.freeze({
     ER_TRUNCATED_WRONG_VALUE_FOR_FIELD: 422,
     ER_DUP_ENTRY: 409
 });
 
-
-module.exports = new DBConnection().query;
+export default new DBConnection().query;

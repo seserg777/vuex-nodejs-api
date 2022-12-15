@@ -1,10 +1,11 @@
-const query = require('../db/db-connection');
-const { multipleColumnSet } = require('../utils/common.utils');
-const Role = require('../utils/userRoles.utils');
-class UserModel {
+import query from '../db/db-connection';
+import { multipleColumnSet } from '../utils/common.utils';
+import * as Role from '../utils/userRoles.utils';
+
+class userModel {
     tableName = 'user';
 
-    find = async (params = {}) => {
+    public find = async (params = {}) => {
         let sql = `SELECT * FROM ${this.tableName}`;
 
         if (!Object.keys(params).length) {
@@ -17,29 +18,29 @@ class UserModel {
         return await query(sql, [...values]);
     }
 
-    findOne = async (params) => {
+    public findOne = async (params: any) => {
         const { columnSet, values } = multipleColumnSet(params)
 
         const sql = `SELECT * FROM ${this.tableName}
         WHERE ${columnSet}`;
 
-        const result = await query(sql, [...values]);
+        const result: any = await query(sql, [...values]);
 
         // return back the first row (user)
         return result[0];
     }
 
-    create = async ({ username, password, first_name, last_name, email, role = Role.SuperUser, age = 0 }) => {
+    public create = async ( username: string, password: string, first_name: string, last_name: string, email: string, role: string = Role.SuperUser, age = 0 ) => {
         const sql = `INSERT INTO ${this.tableName}
         (username, password, first_name, last_name, email, role, age) VALUES (?,?,?,?,?,?,?)`;
 
-        const result = await query(sql, [username, password, first_name, last_name, email, role, age]);
+        const result: any = await query(sql, [username, password, first_name, last_name, email, role, age]);
         const affectedRows = result ? result.affectedRows : 0;
 
         return affectedRows;
     }
 
-    update = async (params, id) => {
+    public update = async (params: any, id: number) => {
         const { columnSet, values } = multipleColumnSet(params)
 
         const sql = `UPDATE user SET ${columnSet} WHERE id = ?`;
@@ -49,14 +50,14 @@ class UserModel {
         return result;
     }
 
-    delete = async (id) => {
+    public delete = async (id: number) => {
         const sql = `DELETE FROM ${this.tableName}
         WHERE id = ?`;
-        const result = await query(sql, [id]);
+        const result: any = await query(sql, [id]);
         const affectedRows = result ? result.affectedRows : 0;
 
         return affectedRows;
     }
 }
 
-module.exports = new UserModel;
+export default new userModel;

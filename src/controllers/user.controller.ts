@@ -1,22 +1,37 @@
-const UserModel = require('../models/user.model');
-const HttpException = require('../utils/HttpException.utils');
-const { validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+import { Controller } from '../interfaces/controller.interface';
+import { Request, Response, Router } from 'express';
+import userModel from '../models/user.model';
+import HttpException from'../utils/HttpException.utils';
+import { validationResult } from'express-validator';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
+import dotenv from'dotenv';
+import awaitHandlerFactory from "../middleware/awaitHandlerFactory.middleware.js";
+import authMiddleware from '../middleware/auth.middleware';
+import * as Role from "../utils/userRoles.utils";
 dotenv.config();
 
-/******************************************************************************
- *                              User Controller
- ******************************************************************************/
-class UserController {
-    getAllUsers = async (req, res, next) => {
-        let userList = await UserModel.find();
+class UserController implements Controller {
+    public path = '/auth';
+    public router = Router();
+    private user = userModel;
+
+    constructor() {
+        this.initializeRoutes();
+    }
+
+    private initializeRoutes() {
+        this.router.get('/users', authMiddleware, this.getAllUsers); // localhost:3000/api/v1/users
+        this.router.get('/id/:id', authMiddleware, this.getUserById);
+    }
+
+    private getAllUsers = async (req: Request, res: Response) => {
+        let userList: any = await userModel.find();
         if (!userList.length) {
             throw new HttpException(404, 'Users not found');
         }
 
-        userList = userList.map(user => {
+        userList = userList.map((user: any) => {
             const { password, ...userWithoutPassword } = user;
             return userWithoutPassword;
         });
@@ -24,8 +39,8 @@ class UserController {
         res.send(userList);
     };
 
-    getUserById = async (req, res, next) => {
-        const user = await UserModel.findOne({ id: req.params.id });
+    private getUserById = async (req: Request, res: Response) => {
+        const user = await userModel.findOne({ id: req.params.id });
         if (!user) {
             throw new HttpException(404, 'User not found');
         }
@@ -35,8 +50,8 @@ class UserController {
         res.send(userWithoutPassword);
     };
 
-    getUserByuserName = async (req, res, next) => {
-        const user = await UserModel.findOne({ username: req.params.username });
+    private getUserByuserName = async (req: Request, res: Response) => {
+        const user = await userModel.findOne({ username: req.params.username });
         if (!user) {
             throw new HttpException(404, 'User not found');
         }
@@ -46,18 +61,20 @@ class UserController {
         res.send(userWithoutPassword);
     };
 
-    getCurrentUser = async (req, res, next) => {
+    private getCurrentUser = async (req: any, res: Response) => {
         const { password, ...userWithoutPassword } = req.currentUser;
 
         res.send(userWithoutPassword);
     };
 
-    createUser = async (req, res, next) => {
+    private createUser = async (req: Request, res: Response) => {
         this.checkValidation(req);
 
         await this.hashPassword(req);
 
-        const result = await UserModel.create(req.body);
+        const { username, password, first_name, last_name, email, role, age } = req.body;
+
+        const result = await userModel.create( username, password, first_name, last_name, email, role, age );
 
         if (!result) {
             throw new HttpException(500, 'Something went wrong');
@@ -66,7 +83,7 @@ class UserController {
         res.status(201).send('User was created!');
     };
 
-    updateUser = async (req, res, next) => {
+    private updateUser = async (req: Request, res: Response) => {
         this.checkValidation(req);
 
         await this.hashPassword(req);
@@ -75,7 +92,7 @@ class UserController {
 
         // do the update query and get the result
         // it can be partial edit
-        const result = await UserModel.update(restOfUpdates, req.params.id);
+        const result: any = await userModel.update(restOfUpdates, Number(req.params.id));
 
         if (!result) {
             throw new HttpException(404, 'Something went wrong');
@@ -89,20 +106,20 @@ class UserController {
         res.send({ message, info });
     };
 
-    deleteUser = async (req, res, next) => {
-        const result = await UserModel.delete(req.params.id);
+    private deleteUser = async (req: Request, res: Response) => {
+        const result = await userModel.delete(Number(req.params.id));
         if (!result) {
             throw new HttpException(404, 'User not found');
         }
         res.send('User has been deleted');
     };
 
-    userLogin = async (req, res, next) => {
+    private userLogin = async (req: Request, res: Response) => {
         this.checkValidation(req);
 
         const { email, password: pass } = req.body;
 
-        const user = await UserModel.findOne({ email });
+        const user = await userModel.findOne({ email });
 
         if (!user) {
             throw new HttpException(401, 'Unable to login!');
@@ -125,24 +142,19 @@ class UserController {
         res.send({ ...userWithoutPassword, token });
     };
 
-    checkValidation = (req) => {
+    private checkValidation = (req: Request) => {
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
-            throw new HttpException(400, 'Validation faild', errors);
+            throw new HttpException(400, 'Validation faild');
         }
     }
 
     // hash password if it exists
-    hashPassword = async (req) => {
+    private hashPassword = async (req: Request) => {
         if (req.body.password) {
             req.body.password = await bcrypt.hash(req.body.password, 8);
         }
     }
 }
 
-
-
-/******************************************************************************
- *                               Export
- ******************************************************************************/
-module.exports = new UserController;
+export default UserController;
