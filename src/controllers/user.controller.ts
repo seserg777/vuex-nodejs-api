@@ -90,8 +90,6 @@ class UserController implements Controller {
 
         const { confirm_password, ...restOfUpdates } = req.body;
 
-        // do the update query and get the result
-        // it can be partial edit
         const result: any = await userModel.update(restOfUpdates, Number(req.params.id));
 
         if (!result) {
