@@ -15,7 +15,7 @@
     "lint": "npx eslint ./src",
     "format": "npx eslint ./src --fix"
   },
-  "author": "Julia Strichash",
+  "author": "Julia Strichash | Sergey Solovyev",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.0",
