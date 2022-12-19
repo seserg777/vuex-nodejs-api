@@ -1,14 +1,12 @@
 import { Controller } from '../interfaces/controller.interface';
-import { Request, Response, Router } from 'express';
+import {Request, response, Response, Router} from 'express';
 import userModel from '../models/user.model';
 import HttpException from'../utils/HttpException.utils';
 import { validationResult } from'express-validator';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import dotenv from'dotenv';
-import awaitHandlerFactory from "../middleware/awaitHandlerFactory.middleware.js";
 import authMiddleware from '../middleware/auth.middleware';
-import * as Role from "../utils/userRoles.utils";
 dotenv.config();
 
 class UserController implements Controller {
@@ -21,8 +19,10 @@ class UserController implements Controller {
     }
 
     private initializeRoutes() {
+        // @ts-ignore
         this.router.get('/users', authMiddleware, this.getAllUsers); // localhost:3000/api/v1/users
-        this.router.get('/id/:id', authMiddleware, this.getUserById);
+        // @ts-ignore
+        this.router.get('/users/id/:id', authMiddleware, this.getUserById);
     }
 
     private getAllUsers = async (req: Request, res: Response) => {

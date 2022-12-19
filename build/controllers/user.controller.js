@@ -33,7 +33,6 @@ const express_validator_1 = require("express-validator");
 const bcrypt = __importStar(require("bcrypt"));
 const jwt = __importStar(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const awaitHandlerFactory_middleware_js_1 = __importDefault(require("../middleware/awaitHandlerFactory.middleware.js"));
 const auth_middleware_1 = __importDefault(require("../middleware/auth.middleware"));
 dotenv_1.default.config();
 class UserController {
@@ -86,8 +85,6 @@ class UserController {
             this.checkValidation(req);
             await this.hashPassword(req);
             const { confirm_password, ...restOfUpdates } = req.body;
-            // do the update query and get the result
-            // it can be partial edit
             const result = await user_model_1.default.update(restOfUpdates, Number(req.params.id));
             if (!result) {
                 throw new HttpException_utils_1.default(404, 'Something went wrong');
@@ -138,9 +135,8 @@ class UserController {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        console.log('initializeRoutes');
-        this.router.get('/users', (0, awaitHandlerFactory_middleware_js_1.default)(this.getAllUsers)); // localhost:3000/api/v1/users
-        this.router.get('/id/:id', auth_middleware_1.default, (0, awaitHandlerFactory_middleware_js_1.default)(this.getUserById));
+        this.router.get('/users', (0, auth_middleware_1.default)(req, res, next), this.getAllUsers); // localhost:3000/api/v1/users
+        //this.router.get('/id/:id', authMiddleware, this.getUserById);
     }
 }
 exports.default = UserController;

@@ -18,7 +18,7 @@ exports.multipleColumnSet = (object) => {
     const keys = Object.keys(object);
     const values = Object.values(object);
 
-    columnSet = keys.map(key => `${key} = ?`).join(', ');
+    const columnSet = keys.map(key => `${key} = ?`).join(', ');
 
     return {
         columnSet,

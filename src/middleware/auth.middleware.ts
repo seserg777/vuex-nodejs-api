@@ -1,51 +1,30 @@
-import HttpException from '../utils/HttpException.utils';
-import UserModel from '../models/user.model';
-import jwt from'jsonwebtoken';
-import dotenv from 'dotenv';
-import { NextFunction, Response } from "express";
-import RequestWithUser from "../interfaces/requestWithUser.interface";
+import { ErrorRequestHandler, NextFunction, Response } from 'express';
+import * as jwt from 'jsonwebtoken';
+import AuthenticationTokenMissingException from '../exceptions/AuthenticationTokenMissingException';
+import WrongAuthenticationTokenException from '../exceptions/WrongAuthenticationTokenException';
+import DataStoredInToken from '../interfaces/dataStoredInToken';
+import RequestWithUser from '../interfaces/requestWithUser.interface';
+import userModel from '../models/user.model';
 
-dotenv.config();
-
-async function authMiddleware(req: RequestWithUser, res: Response, next: NextFunction) {
-    console.log('authMiddleware start');
-    try {
-        console.log('authMiddleware try');
-        const authHeader = req.headers.authorization;
-        const bearer = 'Bearer ';
-
-        if (!authHeader || !authHeader.startsWith(bearer)) {
-            throw new HttpException(401, 'Access denied. No credentials sent!');
+async function authMiddleware(error: ErrorRequestHandler, request: RequestWithUser, response: Response, next: NextFunction) {
+    const cookies = request.cookies;
+    if (cookies && cookies.Authorization) {
+        const secret: string = process.env.JWT_SECRET ? process.env.JWT_SECRET : '';
+        try {
+            const verificationResponse = jwt.verify(cookies.Authorization, secret) as unknown as DataStoredInToken;
+            const id = verificationResponse._id;
+            const user = await userModel.findOne(id);
+            if (user) {
+                request.user = user;
+                next();
+            } else {
+                next(new WrongAuthenticationTokenException());
+            }
+        } catch (error) {
+            next(new WrongAuthenticationTokenException());
         }
-
-        const token = authHeader.replace(bearer, '');
-        const secretKey = process.env.SECRET_JWT || "";
-
-        // Verify Token
-        const decoded: any = jwt.verify(token, secretKey);
-        const user = await UserModel.findOne({ id: decoded.user_id });
-
-        if (!user) {
-            throw new HttpException(401, 'Authentication failed!');
-        }
-
-        // check if the current user is the owner user
-        const ownerAuthorized = req.params.id == user.id;
-
-        // if the current user is not the owner and
-        // if the user role don't have the permission to do this action.
-        // the user will get this error
-        if (!ownerAuthorized && roles.length && !roles.includes(user.role)) {
-            throw new HttpException(401, 'Unauthorized');
-        }
-
-        // if the user has permissions
-        req.user = user;
-        next();
-
-    } catch (e: any) {
-        e.status = 401;
-        next(e);
+    } else {
+        next(new AuthenticationTokenMissingException());
     }
 }
 
