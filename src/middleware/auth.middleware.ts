@@ -1,4 +1,4 @@
-import {ErrorRequestHandler, NextFunction, Request, Response} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import * as jwt from 'jsonwebtoken';
 import AuthenticationTokenMissingException from '../exceptions/AuthenticationTokenMissingException';
 import WrongAuthenticationTokenException from '../exceptions/WrongAuthenticationTokenException';
@@ -15,18 +15,12 @@ type RequestWithUser = Request<ReqDictionary, ResBody, ReqBody, ReqQuery>
 
 async function authMiddleware(request: RequestWithUser, response: Response, next: NextFunction) {
     const cookies = request.cookies;
-    console.log('authMiddleware start', cookies.Authorization);
     if (!!cookies && !!cookies.Authorization) {
-        console.log('111');
         const secret: string = process.env.SECRET_JWT ? process.env.SECRET_JWT : '';
-        console.log('secret:', secret);
         try {
             const verificationResponse = jwt.verify(cookies.Authorization, secret) as unknown as DataStoredInToken;
-            console.log('verificationResponse:', verificationResponse);
             const id = verificationResponse.user_id;
-            console.log('id:', id);
             const user = await userModel.findOne({ id });
-            console.log('user:', user);
             if (user) {
                 request.body.user = user;
                 next();
