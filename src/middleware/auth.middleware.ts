@@ -1,21 +1,34 @@
-import { ErrorRequestHandler, NextFunction, Response } from 'express';
+import {ErrorRequestHandler, NextFunction, Request, Response} from 'express';
 import * as jwt from 'jsonwebtoken';
 import AuthenticationTokenMissingException from '../exceptions/AuthenticationTokenMissingException';
 import WrongAuthenticationTokenException from '../exceptions/WrongAuthenticationTokenException';
 import DataStoredInToken from '../interfaces/dataStoredInToken';
-import RequestWithUser from '../interfaces/requestWithUser.interface';
+//import RequestWithUser from '../interfaces/requestWithUser.interface';
 import userModel from '../models/user.model';
+import User from "../interfaces/user";
 
-async function authMiddleware(error: ErrorRequestHandler, request: RequestWithUser, response: Response, next: NextFunction) {
+type ReqDictionary = {}
+type ReqBody = { user: User }
+type ReqQuery = {}
+type ResBody = {}
+type RequestWithUser = Request<ReqDictionary, ResBody, ReqBody, ReqQuery>
+
+async function authMiddleware(request: RequestWithUser, response: Response, next: NextFunction) {
     const cookies = request.cookies;
-    if (cookies && cookies.Authorization) {
-        const secret: string = process.env.JWT_SECRET ? process.env.JWT_SECRET : '';
+    console.log('authMiddleware start', cookies.Authorization);
+    if (!!cookies && !!cookies.Authorization) {
+        console.log('111');
+        const secret: string = process.env.SECRET_JWT ? process.env.SECRET_JWT : '';
+        console.log('secret:', secret);
         try {
             const verificationResponse = jwt.verify(cookies.Authorization, secret) as unknown as DataStoredInToken;
-            const id = verificationResponse._id;
-            const user = await userModel.findOne(id);
+            console.log('verificationResponse:', verificationResponse);
+            const id = verificationResponse.user_id;
+            console.log('id:', id);
+            const user = await userModel.findOne({ id });
+            console.log('user:', user);
             if (user) {
-                request.user = user;
+                request.body.user = user;
                 next();
             } else {
                 next(new WrongAuthenticationTokenException());
@@ -25,6 +38,7 @@ async function authMiddleware(error: ErrorRequestHandler, request: RequestWithUs
         }
     } else {
         next(new AuthenticationTokenMissingException());
+        //next(new HttpException(401, 'Access denied. No credentials sent!'));
     }
 }
 

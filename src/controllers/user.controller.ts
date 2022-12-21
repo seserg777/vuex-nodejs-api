@@ -1,5 +1,5 @@
 import { Controller } from '../interfaces/controller.interface';
-import {Request, response, Response, Router} from 'express';
+import { NextFunction, Request, Response, Router} from 'express';
 import userModel from '../models/user.model';
 import HttpException from'../utils/HttpException.utils';
 import { validationResult } from'express-validator';
@@ -7,6 +7,10 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import dotenv from'dotenv';
 import authMiddleware from '../middleware/auth.middleware';
+import testMiddleware from '../middleware/test.middleware';
+import validationMiddleware from '../middleware/validation.middleware';
+// @ts-ignore
+import { LogInDto } from "../dto/logIn.dto";
 dotenv.config();
 
 class UserController implements Controller {
@@ -19,10 +23,17 @@ class UserController implements Controller {
     }
 
     private initializeRoutes() {
+        /*
+            token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMSIsImlhdCI6MTY3MTYzMDk0NCwiZXhwIjoxNjcxNzE3MzQ0fQ.k5ip0CVl_QPiEU8PlwR-No92Zs-NQcH0UY1fkT61pqE
+        */
+        /*this.router.use('/', testMiddleware, (req: Request, res: Response, next: NextFunction) => {
+            res.send({msg: 'Hello!'});
+        });*/
         // @ts-ignore
-        this.router.get('/users', authMiddleware, this.getAllUsers); // localhost:3000/api/v1/users
+        this.router.get('/users', authMiddleware, this.getAllUsers); // localhost:3000/users
         // @ts-ignore
         this.router.get('/users/id/:id', authMiddleware, this.getUserById);
+        this.router.post('/login', validationMiddleware(LogInDto), this.userLogin); // localhost:3000/login
     }
 
     private getAllUsers = async (req: Request, res: Response) => {
@@ -143,7 +154,7 @@ class UserController implements Controller {
     private checkValidation = (req: Request) => {
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
-            throw new HttpException(400, 'Validation faild');
+            throw new HttpException(400, 'Validation failed');
         }
     }
 
