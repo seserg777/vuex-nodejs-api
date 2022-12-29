@@ -1,5 +1,5 @@
 import { Controller } from '../interfaces/controller.interface';
-import { NextFunction, Request, Response, Router} from 'express';
+import { Request, Response, Router} from 'express';
 import userModel from '../models/user.model';
 import HttpException from'../utils/HttpException.utils';
 import { validationResult } from'express-validator';
@@ -11,6 +11,7 @@ import testMiddleware from '../middleware/test.middleware';
 import validationMiddleware from '../middleware/validation.middleware';
 // @ts-ignore
 import { LogInDto } from "../dto/logIn.dto";
+import WrongAuthenticationDataException from "../exceptions/WrongAuthenticationDataException";
 dotenv.config();
 
 class UserController implements Controller {
@@ -131,24 +132,25 @@ class UserController implements Controller {
         const user = await userModel.findOne({ email });
 
         if (!user) {
-            throw new HttpException(401, 'Unable to login!');
+            //throw new HttpException(401, 'Wrong user data');
+            res.status(401).send({message:'Wrong user data'});
+        } else {
+            const isMatch = await bcrypt.compare(pass, user.password);
+
+            if (!isMatch) {
+                throw new HttpException(401, 'Incorrect password!');
+            }
+
+            // user matched!
+            const secretKey = process.env.SECRET_JWT || "";
+            const token = jwt.sign({ user_id: user.id.toString() }, secretKey, {
+                expiresIn: '24h'
+            });
+
+            const { password, ...userWithoutPassword } = user;
+
+            res.send({ ...userWithoutPassword, token });
         }
-
-        const isMatch = await bcrypt.compare(pass, user.password);
-
-        if (!isMatch) {
-            throw new HttpException(401, 'Incorrect password!');
-        }
-
-        // user matched!
-        const secretKey = process.env.SECRET_JWT || "";
-        const token = jwt.sign({ user_id: user.id.toString() }, secretKey, {
-            expiresIn: '24h'
-        });
-
-        const { password, ...userWithoutPassword } = user;
-
-        res.send({ ...userWithoutPassword, token });
     };
 
     private checkValidation = (req: Request) => {

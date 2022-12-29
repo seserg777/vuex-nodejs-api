@@ -1,4 +1,3 @@
-import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { Controller } from './interfaces/controller.interface';
@@ -27,7 +26,8 @@ class App {
     }
 
     private initializeMiddlewares() {
-        this.app.use(bodyParser.json());
+        this.app.use(express.json());
+        this.app.use(express.urlencoded({ extended: true}));
         this.app.use(cookieParser.default());
     }
 
