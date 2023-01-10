@@ -1,8 +1,8 @@
 import { Request } from 'express';
-import User from "./user";
+import UserInterface from "./user";
 
 interface RequestWithUser extends Request {
-    user: User;
+    user: UserInterface;
 }
 
 export default RequestWithUser;

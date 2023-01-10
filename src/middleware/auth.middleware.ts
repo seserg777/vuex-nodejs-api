@@ -3,12 +3,11 @@ import * as jwt from 'jsonwebtoken';
 import AuthenticationTokenMissingException from '../exceptions/AuthenticationTokenMissingException';
 import WrongAuthenticationTokenException from '../exceptions/WrongAuthenticationTokenException';
 import DataStoredInToken from '../interfaces/dataStoredInToken';
-//import RequestWithUser from '../interfaces/requestWithUser.interface';
 import userModel from '../models/user.model';
-import User from "../interfaces/user";
+import UserInterface from "../interfaces/user.interface";
 
 type ReqDictionary = {}
-type ReqBody = { user: User }
+type ReqBody = { user: UserInterface }
 type ReqQuery = {}
 type ResBody = {}
 type RequestWithUser = Request<ReqDictionary, ResBody, ReqBody, ReqQuery>

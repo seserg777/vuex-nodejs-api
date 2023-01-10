@@ -7,11 +7,13 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import dotenv from'dotenv';
 import authMiddleware from '../middleware/auth.middleware';
-import testMiddleware from '../middleware/test.middleware';
 import validationMiddleware from '../middleware/validation.middleware';
 // @ts-ignore
 import { LogInDto } from "../dto/logIn.dto";
-import WrongAuthenticationDataException from "../exceptions/WrongAuthenticationDataException";
+import userWithoutPasswordInterface from '../interfaces/userWithoutPassword.interface';
+import user from '../interfaces/user.interface';
+import keyvalueInterface from "../interfaces/keyvalue.interface";
+
 dotenv.config();
 
 class UserController implements Controller {
@@ -35,35 +37,40 @@ class UserController implements Controller {
         // @ts-ignore
         this.router.get('/users/id/:id', authMiddleware, this.getUserById);
         this.router.post('/login', validationMiddleware(LogInDto), this.userLogin); // localhost:3000/login
+        this.router.patch('/users/id/:id', authMiddleware, this.updateUser);
     }
 
     private getAllUsers = async (req: Request, res: Response) => {
-        let userList: any = await userModel.find();
+        const page: number = !!req.query.page ? Number(req.query.page) : 0;
+        const limit: number = !!req.query.limit ? Number(req.query.limit) : 10;
+        const userList: any = await userModel.find({}, page, limit);
+        const assocList: Array<userWithoutPasswordInterface> = [];
         if (!userList.length) {
-            throw new HttpException(404, 'Users not found');
+            //throw new HttpException(404, 'Users not found');
+            res.send(assocList);
+        } else {
+            userList.map((user: user) => {
+                const { password, ...userWithoutPassword } = user;
+                assocList.push(userWithoutPassword as userWithoutPasswordInterface);
+            });
+
+            res.send(assocList);
         }
-
-        userList = userList.map((user: any) => {
-            const { password, ...userWithoutPassword } = user;
-            return userWithoutPassword;
-        });
-
-        res.send(userList);
     };
 
     private getUserById = async (req: Request, res: Response) => {
-        const user = await userModel.findOne({ id: req.params.id });
+        const user: user = await userModel.findOne({ id: req.params.id });
         if (!user) {
             throw new HttpException(404, 'User not found');
         }
 
-        const { password, ...userWithoutPassword } = user;
+        const { password, ...userWithoutPassword }: keyvalueInterface<any> = user;
 
         res.send(userWithoutPassword);
     };
 
     private getUserByuserName = async (req: Request, res: Response) => {
-        const user = await userModel.findOne({ username: req.params.username });
+        const user: user = await userModel.findOne({ username: req.params.username });
         if (!user) {
             throw new HttpException(404, 'User not found');
         }
@@ -100,7 +107,8 @@ class UserController implements Controller {
 
         await this.hashPassword(req);
 
-        const { confirm_password, ...restOfUpdates } = req.body;
+        //const { confirm_password, ...restOfUpdates } = req.body;
+        const { user: u, ...restOfUpdates } = req.body;
 
         const result: any = await userModel.update(restOfUpdates, Number(req.params.id));
 
@@ -108,12 +116,21 @@ class UserController implements Controller {
             throw new HttpException(404, 'Something went wrong');
         }
 
-        const { affectedRows, changedRows, info } = result;
+        /*const { affectedRows, changedRows, info } = result;
 
         const message = !affectedRows ? 'User not found' :
             affectedRows && changedRows ? 'User updated successfully' : 'Updated faild';
 
-        res.send({ message, info });
+        res.send({ message, info });*/
+
+        const user: user = await userModel.findOne({ id: req.params.id });
+        if (!user) {
+            throw new HttpException(404, 'User not found');
+        }
+
+        const { password, ...userWithoutPassword } = user;
+
+        res.send(userWithoutPassword);
     };
 
     private deleteUser = async (req: Request, res: Response) => {
@@ -129,7 +146,7 @@ class UserController implements Controller {
 
         const { email, password: pass } = req.body;
 
-        const user = await userModel.findOne({ email });
+        const user: user = await userModel.findOne({ email });
 
         if (!user) {
             //throw new HttpException(401, 'Wrong user data');
@@ -143,7 +160,7 @@ class UserController implements Controller {
 
             // user matched!
             const secretKey = process.env.SECRET_JWT || "";
-            const token = jwt.sign({ user_id: user.id.toString() }, secretKey, {
+            const token: string = jwt.sign({ user_id: user.id }, secretKey, {
                 expiresIn: '24h'
             });
 

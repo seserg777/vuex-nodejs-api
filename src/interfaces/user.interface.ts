@@ -1,5 +1,5 @@
-interface User {
-    _id: string;
+interface UserInterface {
+    id: string;
     username: string;
     password: string;
     first_name: string;
@@ -9,4 +9,4 @@ interface User {
     age: string
 }
 
-export default User;
+export default UserInterface;

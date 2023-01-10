@@ -1,19 +1,23 @@
 import query from '../db/db-connection';
 import { multipleColumnSet } from '../utils/common.utils';
 import * as Role from '../utils/userRoles.utils';
+import keyvalueInterface from "../interfaces/keyvalue.interface";
 
 class userModel {
     tableName = 'user';
 
-    public find = async (params = {}) => {
+    public find = async (params: keyvalueInterface<any> = {}, page: number = 0, limit: number = 10) => {
         let sql = `SELECT * FROM ${this.tableName}`;
 
         if (!Object.keys(params).length) {
+            sql += ` LIMIT ${page * limit}, ${limit}`;
             return await query(sql);
         }
 
         const { columnSet, values } = multipleColumnSet(params)
         sql += ` WHERE ${columnSet}`;
+
+        sql += ` LIMIT ${page * limit}, ${limit}`;
 
         return await query(sql, [...values]);
     }
@@ -41,7 +45,7 @@ class userModel {
     }
 
     public update = async (params: any, id: number) => {
-        const { columnSet, values } = multipleColumnSet(params)
+        const { columnSet, values } = multipleColumnSet(params);
 
         const sql = `UPDATE user SET ${columnSet} WHERE id = ?`;
 
